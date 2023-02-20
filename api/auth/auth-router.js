@@ -1,8 +1,27 @@
-const router = require('express').Router();
+const router = require("express").Router();
+const UserModel = require("../users/users-model");
+const { JWT_SECRET } = require("../secrets");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const md = require("./auth-middleware");
 
-router.post('/register', (req, res) => {
-  res.end('kayıt olmayı ekleyin, lütfen!');
-  /*
+router.post(
+  "/register",
+  md.checkUsername,
+  md.checkPayload,
+  async (req, res, next) => {
+    try {
+      const hash = bcrypt.hashSync(req.body.password, 8);
+
+      const newUser = await UserModel.add({
+        username: req.body.username,
+        password: hash,
+      });
+      res.status(201).json(newUser);
+    } catch (error) {
+      next(error);
+    }
+    /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
     2^8 HASH TURUNU AŞMAYIN!
@@ -27,10 +46,39 @@ router.post('/register', (req, res) => {
     4- Kullanıcı adı alınmışsa BAŞARISIZ kayıtta,
       şu mesajı içermelidir: "username alınmış".
   */
-});
+  }
+);
 
-router.post('/login', (req, res) => {
-  res.end('girişi ekleyin, lütfen!');
+router.post("/login", md.validateUsername, (req, res) => {
+  try {
+    const { password } = req.body;
+    const passwordCheck = bcrypt.compareSync(password, req.user.password);
+
+    if (passwordCheck) {
+      const jwtToken = jwt.sign(
+        {
+          id: req.user.id,
+          username: req.user.username,
+          password: req.user.password,
+        },
+        JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      res.status(200).json({
+        id: req.user.id,
+        username: req.user.username,
+        password: req.user.password,
+      });
+    } else {
+      next({
+        status: 401,
+        message: "Geçersiz kriter",
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
   /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
