@@ -66,9 +66,9 @@ router.post("/login", md.validateUsername, (req, res) => {
       );
 
       res.status(200).json({
-        id: req.user.id,
-        username: req.user.username,
-        password: req.user.password,
+        success: true,
+        token: jwtToken,
+        message: `Welcome ${req.user.username}! `,
       });
     } else {
       next({
