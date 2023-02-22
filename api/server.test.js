@@ -4,6 +4,15 @@ const request = require("supertest");
 const server = require("./server");
 const db = require("../data/dbConfig");
 
+beforeAll(async () => {
+  await db.migrate.rollback();
+  await db.migrate.latest();
+});
+
+afterAll(async () => {
+  await db.destroy();
+});
+
 test("[0] Testler çalışır durumda]", () => {
   expect(true).not.toBe(false);
 });
@@ -28,7 +37,7 @@ describe("[POST] api/auth/register", () => {
   it("[3] username alındıysa hata dönüyor", async () => {
     const res = await request(server)
       .post("/api/auth/register")
-      .send({ username: "Rootie", password: "1234" });
+      .send({ username: "JohnReese", password: "123456" });
     expect(res.status).toBe(422);
     expect(res.body.message).toBe("username alınmış");
   }, 1000);
